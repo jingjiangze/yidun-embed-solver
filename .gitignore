@@ -3,3 +3,4 @@ __pycache__/
 validate.txt
 *.png
 .env
+*.tgz
