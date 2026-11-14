@@ -35,12 +35,21 @@ initNECaptcha({
 </body></html>""" % (width, captcha_id, width)
 
 
+def _do_get(self):
+    body = self.html.encode("utf-8")
+    self.send_response(200)
+    self.send_header("Content-Type", "text/html; charset=utf-8")
+    self.send_header("Content-Length", str(len(body)))
+    self.end_headers()
+    self.wfile.write(body)
+
+
 class CaptchaPageServer:
     """serve 最小页的本地 http.server（线程化，随 solve_once 生命周期启停）。"""
 
     def __init__(self, captcha_id: str, port: int = 8899, width: int = 320):
         handler = type("H", (BaseHTTPRequestHandler,),
-                       {"html": make_cap_html(captcha_id, width)})
+                       {"html": make_cap_html(captcha_id, width), "do_GET": _do_get})
         self._srv = HTTPServer(("127.0.0.1", port), handler)
         self._port = port
 
@@ -49,6 +58,7 @@ class CaptchaPageServer:
 
     def shutdown(self):
         self._srv.shutdown()
+        self._srv.server_close()  # 不 close 的话 socket 遗留，重试时 bind 失败
 
     @property
     def url(self):
