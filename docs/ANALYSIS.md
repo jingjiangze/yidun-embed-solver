@@ -54,6 +54,22 @@
 另附带观察：家宽（长期跑协议实验的出口）check 连续 14 次 `result:false`，
 机房 IP 反而干净 —— 协议类实验会累积出口风控，实验请用干净 IP。
 
+### 附：v3 协议直打同样被拒（2026-11-15 实测）
+
+社区项目 tiny-jiu/Yidun-Slider-Analysis 走的是 **v3 协议**（getconf → v3/get →
+v3/check，带 irToken/dt 参数，data 五字段 d/m/p/f/ext 自实现加密），在易盾
+官方 demo 页可过验（本仓作者复现成功）。改造其对 production captchaId 后：
+
+| 步骤 | 结果 |
+|---|---|
+| v3/get | ✅ 正常出题（token + 480×240 图） |
+| v3/check | ✅ `result:true`，validate 172 字符 |
+| **业务消费判别**（validate + 密码提交） | ❌ **`-4 滑动验证码校验失败`** |
+
+⇒ **verify 层对「非页面内 SDK 签发」一律拒，与协议代际（v2/v3）无关**。
+tiny-jiu 在 demo 页「能用」是因为 demo 无严格业务 verify；生产 captchaId 场景
+下协议直打全线失效，validate 必须由页面内真实 SDK 签发（本仓路线）。
+
 ## 3. referer 白名单是「双处校验」
 
 易盾按 captchaId 校验来源域名时，**同时检查**：
